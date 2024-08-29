@@ -6,19 +6,25 @@ import {
   Box,
   Button,
   Container,
+  IconButton,
   OutlinedInput,
+  Paper,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
-import { Send } from "@mui/icons-material";
+import { AccountCircle, Person, Send } from "@mui/icons-material";
 import { connect, io } from "socket.io-client";
-const socket = connect("http://localhost:3500");
+import Header from "./components/header";
+import Convo from "./components/convo";
+import MessageInput from "./components/message_input";
+const socket = connect("http://192.168.1.14:3500");
 function App() {
   const [username, setUsername] = useState("");
   const [isLogin, setIsLogin] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
 
   const handleSubmitUsername = (e) => {
     e.preventDefault();
@@ -30,67 +36,75 @@ function App() {
 
   const sendMessage = (e) => {
     e.preventDefault();
-    setMessages((prev) => [...prev, { message: message, user: username }]);
 
-    socket.emit("send_message", { message: message, user: username });
+    if (message.trim() !== "") {
+      try {
+        setMessages((prev) => [...prev, { message: message, user: username }]);
+
+        socket.emit("send_message", { message: message, user: username });
+        setMessage("");
+      } catch (error) {
+        setMessage((prev) => [...prev, { message: error, user: username }]);
+      }
+    }
   };
 
   useEffect(() => {
     socket.on("received_message", (data) => {
-      setMessages((prev) => [...prev, data.message]);
+      setMessages((prev) => [
+        ...prev,
+        { message: data.message, user: data.user },
+      ]);
     });
   }, [socket]);
 
   return (
-    <>
+    <Box
+      sx={{
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+        position: "relative",
+        boxSizing: "border-box",
+        bgcolor: "#1A1E23",
+      }}
+    >
       {isLogin ? (
-        <Container
+        <Paper
+          className={darkMode ? "bg" : ""}
+          elevation={3}
           sx={{
-            height: "100vh",
+            height: "100%",
+            width: "100%",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             flexDirection: "column",
+            position: "relative",
+            boxSizing: "border-box",
+            maxWidth: 500,
           }}
         >
-          <Box>
-            <Stack gap={1}>
-              {messages.map((data, index) => {
-                return (
-                  <Typography
-                    key={index}
-                    variant="body1"
-                    sx={{
-                      backgroundColor: "primary.main",
-                      borderRadius: 5,
-                      width: "fit-content",
-                      padding: 1,
-                      color: "#FFF",
-                    }}
-                  >
-                    {data.message}
-                  </Typography>
-                );
-              })}
-            </Stack>
-            <Typography variant="h6">
-              User: <span style={{ color: "steelblue" }}> {username}</span>{" "}
-            </Typography>
-            <form onSubmit={sendMessage}>
-              <Stack gap={2}>
-                <TextField
-                  label="Message"
-                  variant="outlined"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                />
-                <Button variant="contained" endIcon={<Send />} type="submit">
-                  Send Message
-                </Button>
-              </Stack>
-            </form>
+          <Box
+            height={"100%"}
+            width={"100%"}
+            boxSizing={"border-box"}
+            display={"flex"}
+            alignItems={"center"}
+            justifyContent={"end"}
+            flexDirection={"column"}
+          >
+            <Header username={username} setDarkMode={setDarkMode} />
+            <Convo messages={messages} username={username} />
+            <MessageInput
+              sendMessage={sendMessage}
+              message={message}
+              setMessage={setMessage}
+            />
           </Box>
-        </Container>
+        </Paper>
       ) : (
         <Container
           sx={{
@@ -99,27 +113,40 @@ function App() {
             justifyContent: "center",
             alignItems: "center",
             flexDirection: "column",
+            p: 0,
+            m: 0,
           }}
         >
-          <Box>
-            <Typography variant="h6">Enter your username:</Typography>
+          <Paper
+            sx={{
+              padding: 5,
+            }}
+          >
+            <Typography variant="h6" mb={1}>
+              Login
+            </Typography>
             <form onSubmit={handleSubmitUsername}>
               <Stack gap={1}>
                 <TextField
-                  label="ex. Bakal aKo"
+                  label="Username"
                   variant="outlined"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
+                <TextField
+                  label="Password"
+                  variant="outlined"
+                  type="password"
+                />
                 <Button variant="contained" type="submit">
-                  Enter
+                  Submit
                 </Button>
               </Stack>
             </form>
-          </Box>
+          </Paper>
         </Container>
       )}
-    </>
+    </Box>
   );
 }
 

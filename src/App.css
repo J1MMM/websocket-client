@@ -1,0 +1,8 @@
+.bg {
+  background-color: rebeccapurple;
+  background-image: url("./assets/bg.jpg") !important;
+  background-position: center;
+  background-size: cover;
+  transition-duration: 500ms;
+  animation-duration: 1s;
+}
